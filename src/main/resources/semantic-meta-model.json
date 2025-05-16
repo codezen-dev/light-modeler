@@ -1,0 +1,198 @@
+{
+  "elements": [
+    {
+      "name": "Element",
+      "fields": [
+        {
+          "name": "id",
+          "type": "Long"
+        },
+        {
+          "name": "name",
+          "type": "String"
+        },
+        {
+          "name": "owner",
+          "type": "String"
+        },
+        {
+          "name": "type",
+          "type": "String"
+        },
+        {
+          "name": "modifiers",
+          "type": "List<String>"
+        },
+        {
+          "name": "children",
+          "type": "List<Element>"
+        }
+      ]
+    },
+    {
+      "name": "Definition",
+      "superClass": "Element",
+      "fields": []
+    },
+    {
+      "name": "Usage",
+      "superClass": "Element",
+      "fields": []
+    },
+    {
+      "name": "Expression",
+      "superClass": "Element",
+      "fields": []
+    },
+    {
+      "name": "Feature",
+      "superClass": "Element",
+      "fields": [
+        {
+          "name": "direction",
+          "type": "String"
+        },
+        {
+          "name": "featureType",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "StructureDefinition",
+      "superClass": "Definition",
+      "fields": [
+        {
+          "name": "features",
+          "type": "List<Feature>"
+        },
+        {
+          "name": "specializes",
+          "type": "List<Definition>"
+        }
+      ]
+    },
+    {
+      "name": "PartUsage",
+      "superClass": "Usage",
+      "fields": [
+        {
+          "name": "definition",
+          "type": "StructureDefinition"
+        },
+        {
+          "name": "multiplicity",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "ValueExpression",
+      "superClass": "Expression",
+      "fields": [
+        {
+          "name": "value",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "BooleanExpression",
+      "superClass": "Expression",
+      "fields": [
+        {
+          "name": "operator",
+          "type": "String"
+        },
+        {
+          "name": "operands",
+          "type": "List<Expression>"
+        }
+      ]
+    },
+    {
+      "name": "ConstraintDefinition",
+      "superClass": "Definition",
+      "fields": [
+        {
+          "name": "expression",
+          "type": "Expression"
+        }
+      ]
+    },
+    {
+      "name": "ConstraintUsage",
+      "superClass": "Usage",
+      "fields": [
+        {
+          "name": "definition",
+          "type": "ConstraintDefinition"
+        }
+      ]
+    },
+    {
+      "name": "ActionDefinition",
+      "superClass": "Definition",
+      "fields": [
+        {
+          "name": "parameters",
+          "type": "List<Feature>"
+        }
+      ]
+    },
+    {
+      "name": "ActionUsage",
+      "superClass": "Usage",
+      "fields": [
+        {
+          "name": "definition",
+          "type": "ActionDefinition"
+        }
+      ]
+    },
+    {
+      "name": "AttributeDefinition",
+      "superClass": "Definition",
+      "fields": [
+        {
+          "name": "type",
+          "type": "String"
+        }
+      ]
+    },
+    {
+      "name": "AttributeUsage",
+      "superClass": "Usage",
+      "fields": [
+        {
+          "name": "definition",
+          "type": "AttributeDefinition"
+        },
+        {
+          "name": "value",
+          "type": "Expression"
+        }
+      ]
+    },
+    {
+      "name": "EnumerationDefinition",
+      "superClass": "Definition",
+      "fields": [
+        {
+          "name": "literals",
+          "type": "List<String>"
+        }
+      ]
+    },
+    {
+      "name": "TypeUsage",
+      "superClass": "Usage",
+      "fields": [
+        {
+          "name": "typeElement",
+          "type": "Definition"
+        }
+      ]
+    }
+  ]
+}
