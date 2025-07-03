@@ -63,9 +63,12 @@ public class SemanticElementServiceImpl implements SemanticElementService {
     @Override
     public List<Element> getElementTree() {
         List<Element> all = elementMapper.selectList(null);
-        Map<Long, Element> idMap = all.stream().collect(Collectors.toMap(Element::getId, e -> e));
+        Map<Long, Element> idMap = all.stream()
+                .filter(e -> e.getId() != null)
+                .collect(Collectors.toMap(Element::getId, e -> e));
 
         List<Element> roots = new ArrayList<>();
+
         for (Element element : all) {
             if (element.getOwner() == null) {
                 roots.add(element);
@@ -76,13 +79,39 @@ public class SemanticElementServiceImpl implements SemanticElementService {
                     if (parent != null) {
                         parent.getChildren().add(element);
                     }
-                } catch (NumberFormatException e) {
-                    // 忽略 owner 字段不为数字的情况
+                } catch (NumberFormatException ignore) {
+                    // owner 字段不是有效数字，忽略
                 }
             }
         }
+
+        // ✅ 判断 definition/type 是否为已知元素
+        for (Element element : all) {
+            Map<String, Object> meta = element.getMetadata();
+            if (meta == null) continue;
+
+            if (meta.containsKey("definition")) {
+                try {
+                    Long defId = Long.valueOf(meta.get("definition").toString());
+                    if (!idMap.containsKey(defId)) {
+                        meta.put("definitionUnresolved", true);
+                    }
+                } catch (NumberFormatException ignore) {}
+            }
+
+            if (meta.containsKey("type")) {
+                try {
+                    Long typeId = Long.valueOf(meta.get("type").toString());
+                    if (!idMap.containsKey(typeId)) {
+                        meta.put("typeUnresolved", true);
+                    }
+                } catch (NumberFormatException ignore) {}
+            }
+        }
+
         return roots;
     }
+
 
     @Override
     public List<Element> getElementsByType(String type) {
