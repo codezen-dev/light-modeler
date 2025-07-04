@@ -14,7 +14,7 @@ public class ActionUsageDslRenderer implements DslRenderer {
 
         builder.append(indentStr)
                 .append("ActionUsage \"").append(element.getName()).append("\"")
-                .append(MetaDslFormatter.formatDefinition(meta))
+                .append(DslRenderUtils.resolveDefinition(meta))
                 .append(MetaDslFormatter.formatDirectionAndModifiers(meta, element.getModifiers()))
                 .append(" {\n");
 

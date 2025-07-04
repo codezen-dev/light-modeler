@@ -9,13 +9,20 @@ public class AttributeUsageDslRenderer implements DslRenderer {
     @Override
     public String render(Element element, int indent) {
         String indentStr = DslRenderUtils.indent(indent);
+        StringBuilder builder = new StringBuilder();
         Map<String, Object> meta = element.getMetadata();
 
-        return indentStr + "AttributeUsage \"" + element.getName() + "\""
-                + MetaDslFormatter.formatType(meta)
-                + MetaDslFormatter.formatDefaultValue(meta)
-                + MetaDslFormatter.formatDirectionAndModifiers(meta, element.getModifiers())
-                + "\n";
+        DslRenderUtils.appendDocumentation(builder, element, indentStr);
+
+        builder.append(indentStr)
+                .append("AttributeUsage \"").append(element.getName()).append("\"")
+                .append(DslRenderUtils.resolveType(meta))
+                .append(MetaDslFormatter.formatDefaultValue(meta))
+                .append(MetaDslFormatter.formatMultiplicity(meta))
+                .append(MetaDslFormatter.formatDirectionAndModifiers(meta, element.getModifiers()))
+                .append("\n");
+
+        return builder.toString();
     }
 }
 

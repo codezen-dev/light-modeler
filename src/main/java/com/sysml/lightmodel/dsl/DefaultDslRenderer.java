@@ -8,7 +8,7 @@ public class DefaultDslRenderer implements DslRenderer {
     public String render(Element element, int indent) {
         StringBuilder builder = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
-
+        DslRenderUtils.appendDocumentation(builder, element, indentStr);
         builder.append(indentStr)
                 .append(element.getType())
                 .append(" \"").append(element.getName()).append("\" {")

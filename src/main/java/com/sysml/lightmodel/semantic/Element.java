@@ -36,4 +36,6 @@ public class Element {
 
     @TableField(exist = false)
     private List<Element> children = new ArrayList<>();
+
+    private String documentation;
 }

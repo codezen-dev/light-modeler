@@ -1,12 +1,8 @@
 package com.sysml.lightmodel.dsl;
 
-import com.sysml.lightmodel.semantic.DefinitionResolver;
-import com.sysml.lightmodel.semantic.DslRenderUtils;
 import com.sysml.lightmodel.semantic.Element;
-import com.sysml.lightmodel.semantic.ExpressionVariableExtractor;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class MetaDslFormatter {
 
@@ -23,7 +19,6 @@ public class MetaDslFormatter {
 
         return builder.toString();
     }
-
 
     public static String formatType(Map<String, Object> meta) {
         if (meta != null && meta.get("type") != null) {
@@ -48,10 +43,13 @@ public class MetaDslFormatter {
 
     public static String formatMultiplicity(Map<String, Object> meta) {
         if (meta != null && meta.get("multiplicity") != null) {
-            return " multiplicity [" + meta.get("multiplicity") + "]";
+            return " " + meta.get("multiplicity").toString();
         }
         return "";
     }
+
+
+
 
     public static String formatDefaultValue(Map<String, Object> meta) {
         if (meta != null && meta.get("defaultValue") != null) {
@@ -60,89 +58,6 @@ public class MetaDslFormatter {
         return "";
     }
 
-    public static String renderPartUsage(Element element, int indent) {
-        String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
-        Map<String, Object> meta = element.getMetadata();
-
-        builder.append(indentStr)
-                .append("PartUsage \"").append(element.getName()).append("\"")
-                .append(formatDefinition(meta))
-                .append(formatDirection(meta))
-                .append(formatModifiers(element.getModifiers()))
-                .append(" {\n");
-
-        for (Element child : element.getChildren()) {
-            builder.append(DslRendererRegistry.getRenderer(child.getType()).render(child, indent + 1));
-        }
-        builder.append(indentStr).append("}\n");
-        return builder.toString();
-    }
-
-
-    public static String renderAttributeUsage(Element element, int indent) {
-        String indentStr = DslRenderUtils.indent(indent);
-        Map<String, Object> meta = element.getMetadata();
-
-        return indentStr + "AttributeUsage \"" + element.getName() + "\""
-                + formatType(meta)
-                + formatDefaultValue(meta)
-                + formatDirection(meta)
-                + formatModifiers(element.getModifiers())
-                + "\n";
-    }
-
-
-
-    public static String renderStructureDefinition(Element element, int indent) {
-        String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
-
-        builder.append(indentStr)
-                .append("StructureDefinition \"").append(element.getName()).append("\" {\n");
-
-        for (Element child : element.getChildren()) {
-            builder.append(DslRendererRegistry.getRenderer(child.getType()).render(child, indent + 1));
-        }
-
-        builder.append(indentStr).append("}\n");
-        return builder.toString();
-    }
-
-    public static String renderActionUsage(Element element, int indent) {
-        String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
-        Map<String, Object> meta = element.getMetadata();
-
-        builder.append(indentStr)
-                .append("ActionUsage \"").append(element.getName()).append("\"")
-                .append(formatDefinition(meta))
-                .append(" {\n").append(formatDirection(meta))
-                .append(" ").append(formatModifiers(element.getModifiers()))
-        ;
-
-        for (Element child : element.getChildren()) {
-            builder.append(DslRendererRegistry.getRenderer(child.getType()).render(child, indent + 1));
-        }
-
-        builder.append(indentStr).append("}\n");
-        return builder.toString();
-    }
-
-    public static String renderValueDefinition(Element element, int indent) {
-        String indentStr = DslRenderUtils.indent(indent);
-        Map<String, Object> meta = element.getMetadata();
-
-        return indentStr + "ValueDefinition \"" + element.getName() + "\""
-                + (meta != null && meta.get("value") != null ? " = " + meta.get("value") : "")
-                + "\n";
-    }
-    public static String formatDirection(Map<String, Object> meta) {
-        if (meta != null && meta.get("direction") != null) {
-            return " direction " + meta.get("direction");
-        }
-        return "";
-    }
 
     public static String formatModifiers(Iterable<String> modifiers) {
         if (modifiers == null) return "";
@@ -162,9 +77,19 @@ public class MetaDslFormatter {
             sb.append(" direction ").append(meta.get("direction"));
         }
 
-        // 收集修饰符（modifiers + visibility）
+        // 合并修饰符（modifiers + visibility）
         Set<String> allMods = new LinkedHashSet<>();
         if (modifiers != null) allMods.addAll(modifiers);
+
+        // ✅ 把 metadata 中的 modifiers 合并进来
+        if (meta != null && meta.get("modifiers") instanceof List) {
+            List<?> metaMods = (List<?>) meta.get("modifiers");
+            for (Object mod : metaMods) {
+                if (mod instanceof String) {
+                    allMods.add((String) mod);
+                }
+            }
+        }
 
         if (meta != null && meta.get("visibility") != null) {
             allMods.add(meta.get("visibility").toString());
@@ -178,54 +103,6 @@ public class MetaDslFormatter {
 
         return sb.toString();
     }
-
-    public static String renderConstraintUsage(Element element, int indent) {
-        String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
-
-        builder.append(indentStr)
-                .append("ConstraintUsage \"").append(element.getName()).append("\"");
-
-        Map<String, Object> metadata = element.getMetadata();
-        String expression = metadata != null ? (String) metadata.get("expression") : null;
-
-        if (expression != null) {
-            builder.append(" where ").append(expression);
-
-            // ✅ 提取变量并尝试解析引用
-            Set<String> vars = ExpressionVariableExtractor.extractVariables(expression);
-            if (!vars.isEmpty()) {
-                builder.append("  // refs: ");
-                for (String var : vars) {
-                    Element match = findElementByName(element.getChildren(), var);
-                    if (match != null) {
-                        builder.append(var).append("->").append(match.getType()).append(", ");
-                    } else {
-                        builder.append(var).append("->? , ");
-                    }
-                }
-            }
-        }
-
-        builder.append(" {\n");
-        for (Element child : element.getChildren()) {
-            builder.append(DslRendererRegistry.getRenderer(child.getType()).render(child, indent + 1));
-        }
-        builder.append(indentStr).append("}\n");
-
-        return builder.toString();
-    }
-
-    private static Element findElementByName(List<Element> children, String name) {
-        if (children == null) return null;
-        for (Element child : children) {
-            if (name.equals(child.getName())) {
-                return child;
-            }
-        }
-        return null;
-    }
-
 
 
 }

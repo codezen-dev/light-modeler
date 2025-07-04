@@ -11,10 +11,10 @@ public class PartUsageDslRenderer implements DslRenderer {
         StringBuilder builder = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
         Map<String, Object> meta = element.getMetadata();
-
+        DslRenderUtils.appendDocumentation(builder, element, indentStr);
         builder.append(indentStr)
                 .append("PartUsage \"").append(element.getName()).append("\"")
-                .append(MetaDslFormatter.formatDefinition(meta))
+                .append(DslRenderUtils.resolveDefinition(meta))
                 .append(MetaDslFormatter.formatDirectionAndModifiers(meta, element.getModifiers()))
                 .append(" {\n");
 

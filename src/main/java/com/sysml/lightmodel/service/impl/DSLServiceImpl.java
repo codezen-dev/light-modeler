@@ -1,7 +1,8 @@
 package com.sysml.lightmodel.service.impl;
 
+import com.sysml.lightmodel.dsl.DefinitionResolver;
 import com.sysml.lightmodel.dsl.DslRendererRegistry;
-import com.sysml.lightmodel.semantic.DefinitionResolver;
+import com.sysml.lightmodel.dsl.RendererContext;
 import com.sysml.lightmodel.semantic.Element;
 import com.sysml.lightmodel.service.DSLService;
 import com.sysml.lightmodel.service.SemanticElementService;
@@ -18,17 +19,20 @@ public class DSLServiceImpl implements DSLService {
 
     @Override
     public String exportDsl() {
-        DefinitionResolver.clear();
-        for (Element element : elementService.getAllElements()) {
-            DefinitionResolver.register(element);
-        }
-
+        List<Element> all = elementService.getAllElements();
         List<Element> roots = elementService.getElementTree();
-        StringBuilder builder = new StringBuilder();
-        for (Element root : roots) {
-            String dsl = DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
-            builder.append(dsl);
+
+        // 注入上下文
+        RendererContext.setResolver(new DefinitionResolver(all));
+        try {
+            StringBuilder builder = new StringBuilder();
+            for (Element root : roots) {
+                String dsl = DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
+                builder.append(dsl);
+            }
+            return builder.toString();
+        } finally {
+            RendererContext.clear(); // 清理上下文，防止线程复用污染
         }
-        return builder.toString();
     }
 }
