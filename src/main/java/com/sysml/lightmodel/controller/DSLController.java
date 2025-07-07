@@ -3,6 +3,7 @@ package com.sysml.lightmodel.controller;
 import com.sysml.lightmodel.service.DSLService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -16,6 +17,11 @@ public class DSLController {
     @GetMapping("/export")
     public String exportDsl() {
         return dslService.exportDsl();
+    }
+
+    @GetMapping("/export/{id}")
+    public String exportDslById(@PathVariable Long id) {
+        return dslService.exportDsl(id);
     }
 }
 

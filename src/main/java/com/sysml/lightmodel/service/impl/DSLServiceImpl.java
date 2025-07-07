@@ -35,4 +35,18 @@ public class DSLServiceImpl implements DSLService {
             RendererContext.clear(); // 清理上下文，防止线程复用污染
         }
     }
+    @Override
+    public String exportDsl(Long id) {
+        List<Element> all = elementService.getAllElements();
+        Element root = elementService.getElementTree(id);
+        if (root == null) return "// 节点不存在";
+
+        RendererContext.setResolver(new DefinitionResolver(all));
+        try {
+            return DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
+        } finally {
+            RendererContext.clear();
+        }
+    }
+
 }

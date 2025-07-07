@@ -63,4 +63,15 @@ public class SemanticElementController {
     public List<Element> getTree() {
         return elementService.getElementTree();
     }
+
+    @GetMapping("/children/{ownerId}")
+    public List<Element> getChildren(@PathVariable String ownerId) {
+        return elementService.getElementsByOwner(ownerId);
+    }
+
+    @GetMapping("/root")
+    public List<Element> getRootElements() {
+        return elementService.getElementsByOwner(null);
+    }
+
 }

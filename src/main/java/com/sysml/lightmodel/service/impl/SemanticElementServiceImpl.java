@@ -46,9 +46,21 @@ public class SemanticElementServiceImpl implements SemanticElementService {
     }
 
     @Override
+    @Transactional
     public boolean deleteElement(Long id) {
+        // 递归删除所有子元素
+        deleteChildren(id);
         return elementMapper.deleteById(id) > 0;
     }
+
+    private void deleteChildren(Long parentId) {
+        List<Element> children = getElementsByOwner(parentId.toString());
+        for (Element child : children) {
+            deleteChildren(child.getId()); // 递归删除孙子
+            elementMapper.deleteById(child.getId());
+        }
+    }
+
 
     @Override
     public Element getElementById(Long id) {
@@ -126,5 +138,53 @@ public class SemanticElementServiceImpl implements SemanticElementService {
         query.in("type", List.of("StructureDefinition", "ValueDefinition"));
         return elementMapper.selectList(query);
     }
+
+    @Override
+    public List<Element> getElementsByOwner(String owner) {
+        QueryWrapper<Element> query = new QueryWrapper<>();
+        if (owner == null) {
+            query.isNull("owner");
+        } else {
+            query.eq("owner", owner);
+        }
+        return elementMapper.selectList(query);
+    }
+
+    @Override
+    public Element getElementTree(Long id) {
+        Element root = elementMapper.selectById(id);
+        if (root == null) return null;
+
+        // 查询所有元素用于构建子树
+        List<Element> all = elementMapper.selectList(null);
+
+        // 构建 id -> children 映射
+        Map<Long, List<Element>> childrenMap = new HashMap<>();
+        for (Element e : all) {
+            if (e.getOwner() != null) {
+                childrenMap
+                        .computeIfAbsent(Long.valueOf(e.getOwner()), k -> new ArrayList<>())
+                        .add(e);
+            }
+        }
+
+        // 递归构建子节点
+        buildChildren(root, childrenMap);
+
+        return root;
+    }
+
+    private void buildChildren(Element parent, Map<Long, List<Element>> childrenMap) {
+        List<Element> children = childrenMap.get(parent.getId());
+        if (children != null) {
+            parent.setChildren(children);
+            for (Element child : children) {
+                buildChildren(child, childrenMap);
+            }
+        } else {
+            parent.setChildren(new ArrayList<>()); // 保证非 null
+        }
+    }
+
 
 }

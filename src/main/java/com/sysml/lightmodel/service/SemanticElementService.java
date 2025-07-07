@@ -20,6 +20,9 @@ public interface SemanticElementService {
 
     List<Element> getElementsByType(String type);
     List<Element> getReferenceableTypes();
+    List<Element> getElementsByOwner(String ownerId);
+
+    Element getElementTree(Long id);
 
 }
 
