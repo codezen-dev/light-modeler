@@ -38,4 +38,7 @@ public class Element {
     private List<Element> children = new ArrayList<>();
 
     private String documentation;
+
+    @TableField(exist = false)
+    private String definitionName;
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "type": "PrimitiveType",
+    "name": "String"
+  },
+  {
+    "type": "PrimitiveType",
+    "name": "Integer"
+  },
+  {
+    "type": "PrimitiveType",
+    "name": "Real"
+  },
+  {
+    "type": "PrimitiveType",
+    "name": "Boolean"
+  },
+  {
+    "type": "PrimitiveType",
+    "name": "DateTime"
+  },
+  {
+    "type": "PrimitiveType",
+    "name": "URI"
+  },
+  {
+    "type": "PrimitiveType",
+    "name": "Duration"
+  },
+  {
+    "type": "Block",
+    "name": "PhysicalQuantity",
+    "children": [
+      {
+        "type": "AttributeUsage",
+        "name": "value",
+        "definitionName": "Real"
+      },
+      {
+        "type": "AttributeUsage",
+        "name": "unit",
+        "definitionName": "String"
+      }
+    ]
+  },
+  {
+    "type": "Block",
+    "name": "GeoLocation",
+    "children": [
+      {
+        "type": "AttributeUsage",
+        "name": "latitude",
+        "definitionName": "Real"
+      },
+      {
+        "type": "AttributeUsage",
+        "name": "longitude",
+        "definitionName": "Real"
+      }
+    ]
+  }
+]

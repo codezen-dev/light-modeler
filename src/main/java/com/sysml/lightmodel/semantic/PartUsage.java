@@ -9,9 +9,8 @@ import java.util.List;
  */
 @Data
 public class PartUsage extends Usage {
-    
-    private StructureDefinition definition;
-    
+
+
     private String multiplicity;
-    
+
 }

@@ -1,18 +1,26 @@
 package com.sysml.lightmodel.controller;
 
+import com.sysml.lightmodel.semantic.DefinitionBinder;
+import com.sysml.lightmodel.semantic.Element;
 import com.sysml.lightmodel.service.DSLService;
+import com.sysml.lightmodel.service.DslImportService;
+import com.sysml.lightmodel.service.SemanticElementService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/dsl")
 public class DSLController {
 
-    @Autowired
-    private DSLService dslService;
+    private final DSLService dslService;
+
+    private final DslImportService dslImportService;
+
+    private final SemanticElementService elementService;
 
     @GetMapping("/export")
     public String exportDsl() {
@@ -23,5 +31,13 @@ public class DSLController {
     public String exportDslById(@PathVariable Long id) {
         return dslService.exportDsl(id);
     }
+
+    @PostMapping("/import")
+    public List<Element> importDsl(@RequestBody String dslText) {
+        List<Element> elements = dslImportService.parseDsl(dslText);
+        DefinitionBinder.bindAll(elements);
+        return elements;
+    }
+
 }
 

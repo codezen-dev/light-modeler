@@ -9,5 +9,7 @@ import java.util.List;
  */
 @Data
 public class Definition extends Element {
-    
+
+    private List<Usage> ownedUsages;
+
 }

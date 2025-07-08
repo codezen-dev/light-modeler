@@ -1,6 +1,7 @@
 
 package com.sysml.lightmodel.semantic;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import java.util.List;
 
@@ -9,7 +10,6 @@ import java.util.List;
  */
 @Data
 public class ConstraintUsage extends Usage {
-    
-    private ConstraintDefinition definition;
-    
+
+
 }
