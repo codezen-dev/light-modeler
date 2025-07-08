@@ -55,11 +55,22 @@ public class DSLServiceImpl implements DSLService {
 
         RendererContext.setResolver(new DefinitionResolver(all));
         try {
-            return DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
+            // 检测本节点依赖的类型库
+            Set<String> imports = detectUsedLibraries(List.of(root), typeLibraryService);
+
+            StringBuilder builder = new StringBuilder();
+            for (String lib : imports) {
+                builder.append("import \"").append(lib).append("\"\n\n");
+            }
+
+            String dsl = DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
+            builder.append(dsl);
+            return builder.toString();
         } finally {
             RendererContext.clear();
         }
     }
+
 
     private Set<String> detectUsedLibraries(List<Element> allElements, TypeLibraryServiceImpl typeLibraryService) {
         Set<String> usedTypes = new HashSet<>();

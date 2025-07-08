@@ -1,5 +1,6 @@
 package com.sysml.lightmodel.service.impl;
 
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.sysml.lightmodel.mapper.ElementMapper;
 import com.sysml.lightmodel.semantic.Element;
@@ -32,6 +33,17 @@ public class SemanticElementServiceImpl implements SemanticElementService {
             for (Element child : element.getChildren()) {
                 child.setOwner(String.valueOf(element.getId())); // 设置父 ID
                 createElement(child); // 递归保存
+            }
+        }
+        // ✅ 处理 ownedUsages
+        if (element.getMetadata() != null && element.getMetadata().containsKey("ownedUsages")) {
+            List<Element> usages = JSONUtil.toList(
+                    JSONUtil.toJsonStr(element.getMetadata().get("ownedUsages")),
+                    Element.class
+            );
+            for (Element usage : usages) {
+                usage.setOwner(element.getId().toString());
+                createElement(usage);
             }
         }
 

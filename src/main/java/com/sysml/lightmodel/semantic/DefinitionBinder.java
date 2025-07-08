@@ -3,33 +3,38 @@ package com.sysml.lightmodel.semantic;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 将 definitionName → resolvedDefinition 映射补全
  */
 public class DefinitionBinder {
 
-    public static void bindAll(List<Element> allElements) {
-        Map<String, Definition> nameMap = new HashMap<>();
+    public static void bindAll(List<Element> elements) {
+        Map<String, Element> nameMap = elements.stream()
+                .filter(e -> e.getName() != null)
+                .collect(Collectors.toMap(Element::getName, e -> e, (a, b) -> a));
 
-        // 构建 name → definition 的映射
-        for (Element e : allElements) {
-            if (e instanceof Definition def && def.getName() != null) {
-                nameMap.put(def.getName(), def);
+        for (Element e : elements) {
+            bindRecursive(e, nameMap);
+        }
+    }
+
+    private static void bindRecursive(Element e, Map<String, Element> nameMap) {
+        if (e.getChildren() != null) {
+            for (Element child : e.getChildren()) {
+                bindRecursive(child, nameMap);
             }
         }
 
-        // 扫描 Usage，进行绑定
-        for (Element e : allElements) {
-            if (e instanceof Definition def && def.getOwnedUsages() != null) {
-                for (Usage usage : def.getOwnedUsages()) {
-                    String defName = usage.getDefinitionName();
-                    if (defName != null && nameMap.containsKey(defName)) {
-                        usage.setResolvedDefinition(nameMap.get(defName));
-                    }
-                }
+        if (e.getMetadata() != null) {
+            String defName = (String) e.getMetadata().get("definitionName");
+            if (defName != null && nameMap.containsKey(defName)) {
+                Element def = nameMap.get(defName);
+                e.getMetadata().put("definition", def.getId()); // ✅ 持久化引用
             }
         }
     }
 }
+
 
