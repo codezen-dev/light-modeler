@@ -27,16 +27,13 @@ import java.util.stream.Collectors;
 public class DSLServiceImpl implements DSLService {
 
     private final SemanticElementService elementService;
-
     private final TypeLibraryServiceImpl typeLibraryService;
 
-    private final DslDocumentService dslDocumentService;
     @Override
     public String exportDsl() {
         List<Element> all = elementService.getAllElements();
         List<Element> roots = elementService.getElementTree();
 
-        // 注入上下文
         RendererContext.setResolver(new DefinitionResolver(all));
         try {
             StringBuilder builder = new StringBuilder();
@@ -50,9 +47,10 @@ public class DSLServiceImpl implements DSLService {
             }
             return builder.toString();
         } finally {
-            RendererContext.clear(); // 清理上下文，防止线程复用污染
+            RendererContext.clear();
         }
     }
+
     @Override
     public String exportDsl(Long id) {
         List<Element> all = elementService.getAllElements();
@@ -61,37 +59,18 @@ public class DSLServiceImpl implements DSLService {
 
         RendererContext.setResolver(new DefinitionResolver(all));
         try {
+            Set<String> imports = detectUsedLibraries(List.of(root), typeLibraryService);
             StringBuilder builder = new StringBuilder();
-
-            // ✅ 优先从 dslDocumentService 中获取原始 import 信息
-            DslDocument doc = dslDocumentService.findByRootId(id);
-            if (doc != null && doc.getContent() != null) {
-                // 从原始 DSL 中提取 import "xxx"
-                Pattern importPattern = Pattern.compile("import\\s+\"([^\"]+)\"");
-                Matcher matcher = importPattern.matcher(doc.getContent());
-                while (matcher.find()) {
-                    builder.append("import \"").append(matcher.group(1)).append("\"\n");
-                }
-                builder.append("\n");
-            } else {
-                // fallback: 自动推导（兼容旧数据）
-                Set<String> imports = detectUsedLibraries(List.of(root), typeLibraryService);
-                for (String lib : imports) {
-                    builder.append("import \"").append(lib).append("\"\n");
-                }
-                builder.append("\n");
+            for (String lib : imports) {
+                builder.append("import \"").append(lib).append("\"\n\n");
             }
-
-            // ✅ 渲染结构体
             String dsl = DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
             builder.append(dsl);
-
             return builder.toString();
         } finally {
             RendererContext.clear();
         }
     }
-
 
 
     private Set<String> detectUsedLibraries(List<Element> allElements, TypeLibraryServiceImpl typeLibraryService) {
@@ -108,7 +87,6 @@ public class DSLServiceImpl implements DSLService {
             }
         }
 
-        // 匹配这些类型来自哪个库（目前只判断 default 库）
         Set<String> imports = new HashSet<>();
         List<TypeLibraryElement> defaultTypes = typeLibraryService.getAllTypeDefinitions();
         Set<String> defaultTypeNames = defaultTypes.stream()
@@ -124,6 +102,5 @@ public class DSLServiceImpl implements DSLService {
 
         return imports;
     }
-
-
 }
+

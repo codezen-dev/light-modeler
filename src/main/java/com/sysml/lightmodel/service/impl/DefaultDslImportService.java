@@ -20,9 +20,7 @@ import java.util.stream.Collectors;
 public class DefaultDslImportService implements DslImportService {
 
     private final TypeLibraryService typeLibraryService;
-
     private final SemanticElementService elementService;
-
     private final DslDocumentService dslDocumentService;
 
     private static final Pattern IMPORT_PATTERN = Pattern.compile("import\\s+\"([^\"]+)\"");
@@ -31,12 +29,24 @@ public class DefaultDslImportService implements DslImportService {
 
     @Override
     public List<Element> parseDsl(String dslText) {
-        List<Element> allElements = getElements(dslText);
+        List<Element> allElements = new ArrayList<>();
 
-        // ✅ 2. 处理 def Block / Structure 定义
+        // ✅ 加载默认库类型（如 PrimitiveType）
+        Matcher importMatcher = IMPORT_PATTERN.matcher(dslText);
+        while (importMatcher.find()) {
+            String libName = importMatcher.group(1);
+            if ("sys-types".equals(libName)) libName = "default";
+
+            List<TypeLibraryElement> typeDefs = typeLibraryService.getAllTypeDefinitions();
+            for (TypeLibraryElement libType : typeDefs) {
+                allElements.add(toElement(libType));
+            }
+        }
+
+        // ✅ 解析 DSL 中定义的元素
         Matcher defMatcher = DEF_PATTERN.matcher(dslText);
         while (defMatcher.find()) {
-            String kind = defMatcher.group(1); // Block, etc.
+            String kind = defMatcher.group(1);
             String name = defMatcher.group(2);
             String body = defMatcher.group(3).trim();
 
@@ -46,7 +56,7 @@ public class DefaultDslImportService implements DslImportService {
 
             List<Usage> usages = parseUsages(body, def);
             def.setOwnedUsages(usages);
-
+            def.setChildren(new ArrayList<>(usages)); //
             allElements.add(def);
         }
 
@@ -59,50 +69,56 @@ public class DefaultDslImportService implements DslImportService {
         List<Element> elements = parseDsl(dslText);
         DefinitionBinder.bindAll(elements);
 
-        // ✅ 从数据库获取已有元素
-        List<Element> existingDbElements = elementService.getAllElements(); // 注入
+        // ✅ 数据库中已有的元素
+        List<Element> existingDbElements = elementService.getAllElements();
         Map<String, Element> existingMap = existingDbElements.stream()
                 .filter(e -> e.getName() != null && e.getType() != null)
                 .collect(Collectors.toMap(e -> e.getName() + ":" + e.getType(), e -> e, (a, b) -> a));
-
-        // ✅ 自动绑定 Usage → 已有 Definition
-        for (Element e : elements) {
-            if (e instanceof Definition def && def.getOwnedUsages() != null) {
-                for (Usage usage : def.getOwnedUsages()) {
-                    String key = usage.getDefinitionName() + ":StructureDefinition";
-                    Element match = existingMap.get(key);
-                    if (match instanceof Definition definition) {
-                        usage.setResolvedDefinition(definition);
-                    }
-                }
-            }
-        }
 
         Set<String> existingKeys = new HashSet<>(existingMap.keySet());
         List<Element> toSave = new ArrayList<>();
 
         for (Element e : elements) {
             if (e instanceof Definition def) {
-                if (!existingKeys.contains(def.getName() + ":" + def.getType())) {
+                String defKey = def.getName() + ":" + def.getType();
+                if (!existingKeys.contains(defKey)) {
+                    def.setId(null); // 🔒 清空 ID，避免主键冲突
                     toSave.add(def);
-                    existingKeys.add(def.getName() + ":" + def.getType());
+                    existingKeys.add(defKey);
                 }
 
-                for (Usage usage : def.getOwnedUsages()) {
-                    usage.setOwner(def.getId() == null ? null : def.getId().toString());
-                    if (!existingKeys.contains(usage.getName() + ":" + usage.getType())) {
-                        toSave.add(usage);
-                        existingKeys.add(usage.getName() + ":" + usage.getType());
+                if (def.getOwnedUsages() != null) {
+                    for (Usage usage : def.getOwnedUsages()) {
+                        usage.setId(null);
+                        usage.setOwner(def.getId() == null ? null : def.getId().toString());
+                        String usageKey = usage.getName() + ":" + usage.getType() + ":" + def.getName(); // 避免重名重复
+                        if (!existingKeys.contains(usageKey)) {
+                            toSave.add(usage);
+                            existingKeys.add(usageKey);
+                        }
                     }
                 }
             } else {
-                if (!existingKeys.contains(e.getName() + ":" + e.getType())) {
+                String key = e.getName() + ":" + e.getType();
+                if (!existingKeys.contains(key)) {
+                    e.setId(null);
                     toSave.add(e);
-                    existingKeys.add(e.getName() + ":" + e.getType());
+                    existingKeys.add(key);
                 }
             }
         }
 
+        // ✅ 自动绑定 orphan Usage 的 owner
+        for (Element e : toSave) {
+            if (e instanceof Usage u && u.getOwner() == null) {
+                Definition parent = findParentDefinition(elements, u);
+                if (parent != null) {
+                    u.setOwner(parent.getId() == null ? null : parent.getId().toString());
+                }
+            }
+        }
+
+        // ✅ 执行插入
         List<Long> savedIds = new ArrayList<>();
         for (Element e : toSave) {
             Element saved = elementService.createElement(e);
@@ -114,71 +130,48 @@ public class DefaultDslImportService implements DslImportService {
     }
 
 
-    private List<Element> getElements(String dslText) {
-        List<Element> allElements = new ArrayList<>();
-
-        // ✅ 1. 处理 import 语句
-        Matcher importMatcher = IMPORT_PATTERN.matcher(dslText);
-        while (importMatcher.find()) {
-            String libName = importMatcher.group(1);
-
-            // ✅ 映射 sys-types → default 类型库
-            if ("sys-types".equals(libName)) {
-                libName = "default";
-            }
-
-            // 加载当前库中的所有类型定义
-            List<TypeLibraryElement> typeDefs = typeLibraryService.getAllTypeDefinitions();
-            for (TypeLibraryElement libType : typeDefs) {
-                allElements.add(toElement(libType));
-            }
-
-        }
-        return allElements;
-    }
-
     private Element toElement(TypeLibraryElement src) {
         Element e = new Element();
         e.setName(src.getName());
         e.setType(src.getType());
         e.setDocumentation(src.getDocumentation());
-        e.setChildren(src.getChildren());
         return e;
     }
 
-
-    private List<Usage> parseUsages(String body, Element parent) {
+    private List<Usage> parseUsages(String body, Definition parent) {
         List<Usage> usages = new ArrayList<>();
-        Matcher usageMatcher = USAGE_PATTERN.matcher(body);
-
-        while (usageMatcher.find()) {
-            String kind = usageMatcher.group(1); // part or attr
-            String name = usageMatcher.group(2);
-            String type = usageMatcher.group(3);
-            String multiplicity = usageMatcher.group(4); // [0..*]
-            String defaultValue = usageMatcher.group(5); // = xxx
+        Matcher matcher = USAGE_PATTERN.matcher(body);
+        while (matcher.find()) {
+            String kind = matcher.group(1);
+            String name = matcher.group(2);
+            String defName = matcher.group(3);
+            String multiplicity = matcher.group(4);
+            String defaultValue = matcher.group(5);
 
             Usage usage = new Usage();
             usage.setName(name);
-            usage.setType(kind.equals("part") ? "PartUsage" : "AttributeUsage");
-            usage.setDefinitionName(type);
-
-            if (parent instanceof Definition def) {
-                usage.setParentDefinition(def);
-            }
-
-            if (multiplicity != null) {
-                usage.setMultiplicity(multiplicity.replaceAll("[\\[\\]]", "").trim());
-            }
-
-            if (defaultValue != null) {
-                usage.setDefaultValue(defaultValue.replace("=", "").trim());
-            }
+            usage.setType(kind.equals("attr") ? "AttributeUsage" : "PartUsage");
+            usage.setDefinitionName(defName);
+            usage.setMultiplicity(multiplicity != null ? multiplicity.replaceAll("[\\[\\]]", "") : null);
+            usage.setDefaultValue(defaultValue != null ? defaultValue.replace("=", "").trim() : null);
+            usage.setParentDefinition(parent);
 
             usages.add(usage);
         }
-
         return usages;
     }
+
+    private Definition findParentDefinition(List<Element> elements, Usage usage) {
+        for (Element e : elements) {
+            if (e instanceof Definition def && def.getOwnedUsages() != null) {
+                if (def.getOwnedUsages().contains(usage)) {
+                    return def;
+                }
+            }
+        }
+        return null;
+    }
 }
+
+
 

@@ -18,13 +18,11 @@ public class DslDocumentServiceImpl implements DslDocumentService {
     private final DslDocumentMapper mapper;
 
     @Override
-    public DslDocument findByRootId(Long rootElementId) {
-        // 使用 JSON 查询包含此 ID 的文档
-        // 注意：element_ids 是 JSON 存储格式（如 [123,456,...]）
-        LambdaQueryWrapper<DslDocument> query = new LambdaQueryWrapper<>();
-        query.apply("JSON_CONTAINS(element_ids, CAST({0} AS JSON))", rootElementId);
-        List<DslDocument> docs = mapper.selectList(query);
-        return docs.isEmpty() ? null : docs.get(0); // 目前一对一绑定
+    public DslDocument findByRootId(Long rootId) {
+        return getAll().stream()
+                .filter(doc -> doc.getElementIds() != null && doc.getElementIds().contains(rootId))
+                .findFirst()
+                .orElse(null);
     }
 
 
