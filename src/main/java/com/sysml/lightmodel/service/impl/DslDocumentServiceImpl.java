@@ -1,5 +1,6 @@
 package com.sysml.lightmodel.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.sysml.lightmodel.mapper.DslDocumentMapper;
 import com.sysml.lightmodel.pojo.DslDocument;
@@ -15,6 +16,17 @@ import java.util.List;
 public class DslDocumentServiceImpl implements DslDocumentService {
 
     private final DslDocumentMapper mapper;
+
+    @Override
+    public DslDocument findByRootId(Long rootElementId) {
+        // 使用 JSON 查询包含此 ID 的文档
+        // 注意：element_ids 是 JSON 存储格式（如 [123,456,...]）
+        LambdaQueryWrapper<DslDocument> query = new LambdaQueryWrapper<>();
+        query.apply("JSON_CONTAINS(element_ids, CAST({0} AS JSON))", rootElementId);
+        List<DslDocument> docs = mapper.selectList(query);
+        return docs.isEmpty() ? null : docs.get(0); // 目前一对一绑定
+    }
+
 
     @Override
     public DslDocument saveDsl(String name, String content, List<Long> elementIds) {

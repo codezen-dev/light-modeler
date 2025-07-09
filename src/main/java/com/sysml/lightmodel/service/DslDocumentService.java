@@ -8,4 +8,7 @@ public interface DslDocumentService {
     DslDocument saveDsl(String name, String content, List<Long> elementIds);
     List<DslDocument> getAll();
     DslDocument getById(Long id);
+
+    DslDocument findByRootId(Long rootElementId);
+
 }

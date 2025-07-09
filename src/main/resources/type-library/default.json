@@ -42,6 +42,38 @@
         "definitionName": "String"
       }
     ]
+  },
+  {
+    "type": "StructureDefinition",
+    "name": "GeoLocation",
+    "children": [
+      {
+        "type": "AttributeUsage",
+        "name": "latitude",
+        "definitionName": "Real"
+      },
+      {
+        "type": "AttributeUsage",
+        "name": "longitude",
+        "definitionName": "Real"
+      }
+    ]
+  },
+  {
+    "type": "StructureDefinition",
+    "name": "PhysicalQuantity",
+    "children": [
+      {
+        "type": "AttributeUsage",
+        "name": "value",
+        "definitionName": "Real"
+      },
+      {
+        "type": "AttributeUsage",
+        "name": "unit",
+        "definitionName": "String"
+      }
+    ]
   }
 
 ]
