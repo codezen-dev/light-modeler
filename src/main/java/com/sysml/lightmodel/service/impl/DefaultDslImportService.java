@@ -29,10 +29,9 @@ public class DefaultDslImportService implements DslImportService {
     public List<Element> parseDsl(String dslText) {
         List<Element> allElements = getElements(dslText);
 
-        // ✅ 2. 处理 def Block / Structure 定义
         Matcher defMatcher = DEF_PATTERN.matcher(dslText);
         while (defMatcher.find()) {
-            String kind = defMatcher.group(1); // Block, etc.
+            String kind = defMatcher.group(1);
             String name = defMatcher.group(2);
             String body = defMatcher.group(3).trim();
 
