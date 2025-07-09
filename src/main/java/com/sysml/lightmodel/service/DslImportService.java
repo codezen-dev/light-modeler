@@ -12,4 +12,6 @@ public interface DslImportService {
      * @return Element 列表（一般是 Definition 类型为根）
      */
     List<Element> parseDsl(String dslText);
+
+    List<Element> importDslWithPersistence(String dslText);
 }

@@ -1,25 +1,29 @@
 package com.sysml.lightmodel.service.impl;
 
-import com.sysml.lightmodel.semantic.Definition;
-import com.sysml.lightmodel.semantic.Element;
-import com.sysml.lightmodel.semantic.TypeLibraryElement;
-import com.sysml.lightmodel.semantic.Usage;
+import com.sysml.lightmodel.semantic.*;
+import com.sysml.lightmodel.service.DslDocumentService;
 import com.sysml.lightmodel.service.DslImportService;
+import com.sysml.lightmodel.service.SemanticElementService;
 import com.sysml.lightmodel.service.TypeLibraryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DefaultDslImportService implements DslImportService {
 
     private final TypeLibraryService typeLibraryService;
+
+    private final SemanticElementService elementService;
+
+    private final DslDocumentService dslDocumentService;
 
     private static final Pattern IMPORT_PATTERN = Pattern.compile("import\\s+\"([^\"]+)\"");
     private static final Pattern DEF_PATTERN = Pattern.compile("def\\s+(\\w+)\\s+(\\w+)\\s*\\{([\\s\\S]*?)\\}", Pattern.MULTILINE);
@@ -48,6 +52,67 @@ public class DefaultDslImportService implements DslImportService {
 
         return allElements;
     }
+
+    @Override
+    @Transactional
+    public List<Element> importDslWithPersistence(String dslText) {
+        List<Element> elements = parseDsl(dslText);
+        DefinitionBinder.bindAll(elements);
+
+        // ✅ 从数据库获取已有元素
+        List<Element> existingDbElements = elementService.getAllElements(); // 注入
+        Map<String, Element> existingMap = existingDbElements.stream()
+                .filter(e -> e.getName() != null && e.getType() != null)
+                .collect(Collectors.toMap(e -> e.getName() + ":" + e.getType(), e -> e, (a, b) -> a));
+
+        // ✅ 自动绑定 Usage → 已有 Definition
+        for (Element e : elements) {
+            if (e instanceof Definition def && def.getOwnedUsages() != null) {
+                for (Usage usage : def.getOwnedUsages()) {
+                    String key = usage.getDefinitionName() + ":StructureDefinition";
+                    Element match = existingMap.get(key);
+                    if (match instanceof Definition definition) {
+                        usage.setResolvedDefinition(definition);
+                    }
+                }
+            }
+        }
+
+        Set<String> existingKeys = new HashSet<>(existingMap.keySet());
+        List<Element> toSave = new ArrayList<>();
+
+        for (Element e : elements) {
+            if (e instanceof Definition def) {
+                if (!existingKeys.contains(def.getName() + ":" + def.getType())) {
+                    toSave.add(def);
+                    existingKeys.add(def.getName() + ":" + def.getType());
+                }
+
+                for (Usage usage : def.getOwnedUsages()) {
+                    usage.setOwner(def.getId() == null ? null : def.getId().toString());
+                    if (!existingKeys.contains(usage.getName() + ":" + usage.getType())) {
+                        toSave.add(usage);
+                        existingKeys.add(usage.getName() + ":" + usage.getType());
+                    }
+                }
+            } else {
+                if (!existingKeys.contains(e.getName() + ":" + e.getType())) {
+                    toSave.add(e);
+                    existingKeys.add(e.getName() + ":" + e.getType());
+                }
+            }
+        }
+
+        List<Long> savedIds = new ArrayList<>();
+        for (Element e : toSave) {
+            Element saved = elementService.createElement(e);
+            savedIds.add(saved.getId());
+        }
+
+        dslDocumentService.saveDsl("Unnamed", dslText, savedIds);
+        return elements;
+    }
+
 
     private List<Element> getElements(String dslText) {
         List<Element> allElements = new ArrayList<>();

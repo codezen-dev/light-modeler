@@ -28,7 +28,7 @@
     "name": "Duration"
   },
   {
-    "type": "Block",
+    "type": "StructureDefinition",
     "name": "PhysicalQuantity",
     "children": [
       {
@@ -42,21 +42,6 @@
         "definitionName": "String"
       }
     ]
-  },
-  {
-    "type": "Block",
-    "name": "GeoLocation",
-    "children": [
-      {
-        "type": "AttributeUsage",
-        "name": "latitude",
-        "definitionName": "Real"
-      },
-      {
-        "type": "AttributeUsage",
-        "name": "longitude",
-        "definitionName": "Real"
-      }
-    ]
   }
+
 ]
