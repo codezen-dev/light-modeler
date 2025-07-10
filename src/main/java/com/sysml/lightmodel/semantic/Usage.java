@@ -5,8 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.util.List;
-
 /**
  * Contextual use of a definition
  */
@@ -16,9 +14,7 @@ public class Usage extends Element {
 
     private String definitionName; // DSL 层：引用名，如 "Real", "Controller"
 
-    private String type;           // PartUsage, AttributeUsage, ConstraintUsage 等
-    private String multiplicity;
-    private String defaultValue;
+    private String type;
 
     @JsonIgnore
     private Definition parentDefinition;

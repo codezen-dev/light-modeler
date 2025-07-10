@@ -6,7 +6,6 @@ import com.sysml.lightmodel.service.DSLService;
 import com.sysml.lightmodel.service.DslImportService;
 import com.sysml.lightmodel.service.SemanticElementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -36,6 +35,9 @@ public class DSLController {
     public List<Element> importDsl(@RequestBody String dslText) {
         List<Element> elements = dslImportService.parseDsl(dslText);
         DefinitionBinder.bindAll(elements);
+        for (Element element : elements) {
+            elementService.createElement(element);
+        }
         return elements;
     }
 

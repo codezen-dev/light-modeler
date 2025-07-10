@@ -42,6 +42,12 @@ public class TypeLibraryServiceImpl implements TypeLibraryService {
     }
 
     @Override
+    public List<TypeLibraryElement> getAllTypeDefinitions(String libId) {
+        return registry.getLibrary(libId);
+    }
+
+
+    @Override
     public TypeLibraryElement getTypeDefinitionById(String id) {
         return registry.getCurrentLibrary().stream()
                 .filter(e -> Objects.equals(e.getId(), id))

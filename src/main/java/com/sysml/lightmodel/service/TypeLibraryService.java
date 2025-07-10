@@ -10,6 +10,8 @@ public interface TypeLibraryService {
 
     List<TypeLibraryElement> getAllTypeDefinitions();
 
+    List<TypeLibraryElement> getAllTypeDefinitions(String libId);
+
     TypeLibraryElement getTypeDefinitionById(String id);
 
     void importDefinitions(List<TypeLibraryElement> list);
