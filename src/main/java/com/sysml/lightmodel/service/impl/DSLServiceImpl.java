@@ -10,11 +10,11 @@ import com.sysml.lightmodel.semantic.Usage;
 import com.sysml.lightmodel.service.DSLService;
 import com.sysml.lightmodel.service.SemanticElementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,7 +29,7 @@ public class DSLServiceImpl implements DSLService {
     public String exportDsl() {
         List<Element> all = elementService.getAllElements();
         List<Element> roots = elementService.getElementTree();
-
+        populateDefinitionNames(all);
         // 注入上下文
         RendererContext.setResolver(new DefinitionResolver(all));
         try {
@@ -52,7 +52,7 @@ public class DSLServiceImpl implements DSLService {
         List<Element> all = elementService.getAllElements();
         Element root = elementService.getElementTree(id);
         if (root == null) return "// 节点不存在";
-
+        populateDefinitionNames(all);
         RendererContext.setResolver(new DefinitionResolver(all));
         try {
             return DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
@@ -90,6 +90,19 @@ public class DSLServiceImpl implements DSLService {
         }
 
         return imports;
+    }
+    private void populateDefinitionNames(List<Element> allElements) {
+        Map<String, Element> idToElement = allElements.stream()
+                .filter(e -> e.getId() != null)
+                .collect(Collectors.toMap(e -> e.getId().toString(), e -> e));
+
+        for (Element element : allElements) {
+            if (element.getMetadata() == null) continue;
+            Object defId = element.getMetadata().get("definitionId");
+            if (defId instanceof String id && idToElement.containsKey(id)) {
+                element.setDefinitionName(idToElement.get(id).getName());
+            }
+        }
     }
 
 

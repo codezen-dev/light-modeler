@@ -6,20 +6,21 @@ import com.sysml.lightmodel.semantic.Element;
 public class StructureDefinitionDslRenderer implements DslRenderer {
     @Override
     public String render(Element element, int indent) {
+        StringBuilder sb = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
 
-        builder.append(indentStr)
-                .append("StructureDefinition \"").append(element.getName()).append("\"")
-                .append(MetaDslFormatter.formatModifiers(element.getModifiers()))
-                .append(" {\n");
+        DslRenderUtils.appendDocumentation(sb, element, indentStr);
+        sb.append(indentStr).append("def StructureDefinition ").append(element.getName()).append(" {\n");
 
-        for (Element child : element.getChildren()) {
-            builder.append(DslRendererRegistry.getRenderer(child.getType()).render(child, indent + 1));
+        if (element.getChildren() != null) {
+            for (Element child : element.getChildren()) {
+                String rendered = DslRendererRegistry.render(child, indent + 1);
+                sb.append(rendered);
+            }
         }
 
-        builder.append(indentStr).append("}\n");
-        return builder.toString();
+        sb.append(indentStr).append("}\n");
+        return sb.toString();
     }
 }
 

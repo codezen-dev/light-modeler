@@ -3,18 +3,25 @@ package com.sysml.lightmodel.dsl;
 import com.sysml.lightmodel.semantic.DslRenderUtils;
 import com.sysml.lightmodel.semantic.Element;
 
-import java.util.Map;
-
 public class ValueDefinitionDslRenderer implements DslRenderer {
     @Override
     public String render(Element element, int indent) {
+        StringBuilder sb = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
-        Map<String, Object> meta = element.getMetadata();
+        DslRenderUtils.appendDocumentation(sb, element, indentStr);
+        sb.append(indentStr)
+                .append("def ValueDefinition ").append(element.getName())
+                .append(" {\n");
 
-        return indentStr + "ValueDefinition \"" + element.getName() + "\""
-                + (meta != null && meta.get("value") != null ? " = " + meta.get("value") : "")
-                + MetaDslFormatter.formatModifiers(element.getModifiers())
-                + "\n";
+        if (element.getChildren() != null) {
+            for (Element child : element.getChildren()) {
+                String rendered = DslRendererRegistry.render(child, indent + 1);
+                sb.append(rendered);
+            }
+        }
+
+        sb.append(indentStr).append("}\n");
+        return sb.toString();
     }
 }
 

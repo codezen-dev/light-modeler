@@ -1,5 +1,7 @@
 package com.sysml.lightmodel.dsl;
 
+import com.sysml.lightmodel.semantic.Element;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -16,12 +18,19 @@ public class DslRendererRegistry {
         register("Default", new DefaultDslRenderer());
     }
 
-
     public static void register(String type, DslRenderer renderer) {
         registry.put(type, renderer);
     }
 
+    @SuppressWarnings("unchecked")
     public static DslRenderer getRenderer(String type) {
-        return registry.getOrDefault(type, registry.get("Default"));
+        return  registry.getOrDefault(type, registry.get("Default"));
+    }
+
+    public static String render(Element element, int indent) {
+        if (element == null || element.getType() == null) return "";
+        return getRenderer(element.getType()).render(element, indent);
     }
 }
+
+

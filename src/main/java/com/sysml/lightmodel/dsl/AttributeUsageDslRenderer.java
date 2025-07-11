@@ -3,26 +3,20 @@ package com.sysml.lightmodel.dsl;
 import com.sysml.lightmodel.semantic.DslRenderUtils;
 import com.sysml.lightmodel.semantic.Element;
 
-import java.util.Map;
-
 public class AttributeUsageDslRenderer implements DslRenderer {
     @Override
     public String render(Element element, int indent) {
+        StringBuilder sb = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
-        Map<String, Object> meta = element.getMetadata();
-
-        DslRenderUtils.appendDocumentation(builder, element, indentStr);
-
-        builder.append(indentStr)
-                .append("AttributeUsage \"").append(element.getName()).append("\"")
-                .append(DslRenderUtils.resolveType(meta))
-                .append(MetaDslFormatter.formatDefaultValue(meta))
-                .append(MetaDslFormatter.formatMultiplicity(meta))
-                .append(MetaDslFormatter.formatDirectionAndModifiers(meta, element.getModifiers()))
+        DslRenderUtils.appendDocumentation(sb, element, indentStr);
+        sb.append(indentStr)
+                .append("attr ").append(element.getName())
+                .append(": ").append(element.getDefinitionName())
+                .append(DslRenderHelper.renderMultiplicity(element))
+                .append(DslRenderHelper.renderMetadata(element))
+                .append(DslRenderHelper.renderDocumentation(element))
                 .append("\n");
-
-        return builder.toString();
+        return sb.toString();
     }
 }
 
