@@ -9,18 +9,21 @@ public class ValueDefinitionDslRenderer implements DslRenderer {
         StringBuilder sb = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
         DslRenderUtils.appendDocumentation(sb, element, indentStr);
-        sb.append(indentStr)
-                .append("def ValueDefinition ").append(element.getName())
-                .append(" {\n");
 
-        if (element.getChildren() != null) {
-            for (Element child : element.getChildren()) {
-                String rendered = DslRendererRegistry.render(child, indent + 1);
-                sb.append(rendered);
-            }
+        String typeStr = element.getDefinitionName();
+        if (typeStr == null && element.getResolvedDefinition() != null) {
+            typeStr = element.getResolvedDefinition().getName();
+        }
+        if (typeStr == null) {
+            typeStr = "null";
         }
 
-        sb.append(indentStr).append("}\n");
+        sb.append(indentStr)
+                .append("def ").append(element.getName())
+                .append(": ").append(typeStr)
+                .append(DslRenderHelper.renderMetadata(element))
+                .append(DslRenderHelper.renderDocumentation(element))
+                .append("\n");
         return sb.toString();
     }
 }

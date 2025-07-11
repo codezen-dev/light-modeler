@@ -3,27 +3,29 @@ package com.sysml.lightmodel.dsl;
 import com.sysml.lightmodel.semantic.DslRenderUtils;
 import com.sysml.lightmodel.semantic.Element;
 
-import java.util.Map;
-
 public class ActionUsageDslRenderer implements DslRenderer {
     @Override
     public String render(Element element, int indent) {
+        StringBuilder sb = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
-        StringBuilder builder = new StringBuilder();
-        Map<String, Object> meta = element.getMetadata();
+        DslRenderUtils.appendDocumentation(sb, element, indentStr);
 
-        builder.append(indentStr)
-                .append("ActionUsage \"").append(element.getName()).append("\"")
-                .append(DslRenderUtils.resolveDefinition(meta))
-                .append(MetaDslFormatter.formatDirectionAndModifiers(meta, element.getModifiers()))
-                .append(" {\n");
-
-        for (Element child : element.getChildren()) {
-            builder.append(DslRendererRegistry.getRenderer(child.getType()).render(child, indent + 1));
+        String typeStr = element.getDefinitionName();
+        if (typeStr == null && element.getResolvedDefinition() != null) {
+            typeStr = element.getResolvedDefinition().getName();
+        }
+        if (typeStr == null) {
+            typeStr = "null";
         }
 
-        builder.append(indentStr).append("}\n");
-        return builder.toString();
+        sb.append(indentStr)
+                .append("action ").append(element.getName())
+                .append(": ").append(typeStr)
+                .append(DslRenderHelper.renderMultiplicity(element))
+                .append(DslRenderHelper.renderMetadata(element))
+                .append(DslRenderHelper.renderDocumentation(element))
+                .append("\n");
+        return sb.toString();
     }
 }
 

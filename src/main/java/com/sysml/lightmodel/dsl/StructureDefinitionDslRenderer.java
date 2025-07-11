@@ -8,15 +8,12 @@ public class StructureDefinitionDslRenderer implements DslRenderer {
     public String render(Element element, int indent) {
         StringBuilder sb = new StringBuilder();
         String indentStr = DslRenderUtils.indent(indent);
-
         DslRenderUtils.appendDocumentation(sb, element, indentStr);
+
         sb.append(indentStr).append("def StructureDefinition ").append(element.getName()).append(" {\n");
 
-        if (element.getChildren() != null) {
-            for (Element child : element.getChildren()) {
-                String rendered = DslRendererRegistry.render(child, indent + 1);
-                sb.append(rendered);
-            }
+        for (Element child : element.getChildren()) {
+            sb.append(DslRendererRegistry.render(child, indent + 1));
         }
 
         sb.append(indentStr).append("}\n");

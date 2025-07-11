@@ -24,7 +24,7 @@ public class DslRenderUtils {
         if (meta == null) return "";
 
         Object defId = meta.get("definitionId");
-        boolean unresolved = Boolean.TRUE.equals(meta.get("definitionUnresolved"));
+
         if (defId == null) return "";
 
         Element def = RendererContext.getResolver().resolveById(defId);
