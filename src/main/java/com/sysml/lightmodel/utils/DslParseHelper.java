@@ -16,6 +16,7 @@ public class DslParseHelper {
         return matcher.find() ? matcher.group(1).trim() : null;
     }
 
+
     public static Map<String, Object> parseMetadata(String line) {
         Matcher matcher = METADATA_PATTERN.matcher(line);
         Map<String, Object> metadata = new LinkedHashMap<>();

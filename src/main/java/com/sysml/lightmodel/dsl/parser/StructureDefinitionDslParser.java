@@ -3,10 +3,16 @@ package com.sysml.lightmodel.dsl.parser;
 import com.sysml.lightmodel.semantic.Definition;
 import com.sysml.lightmodel.semantic.Element;
 import com.sysml.lightmodel.semantic.Usage;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 
+@Component
+@RequiredArgsConstructor
 public class StructureDefinitionDslParser implements DslParser {
+
+    private final DslParserRegistry dslParserRegistry;
 
     @Override
     public Element parse(DslRawEntry entry) {
@@ -15,31 +21,40 @@ public class StructureDefinitionDslParser implements DslParser {
         def.setName(entry.name);
         def.setOwnedUsages(new ArrayList<>());
 
-        // 兼容 \n 和 \r\n
         String[] lines = entry.body.split("\\r?\\n");
         for (String line : lines) {
             line = line.trim();
+            if (line.isEmpty()) continue;
 
-            DslRawEntry subEntry = new DslRawEntry();
-            subEntry.body = line;
+            String prefix = extractPrefix(line);
+            String semanticType = mapPrefixToType(prefix);
 
-            Element parsed = null;
-
-            if (line.startsWith("attr ")) {
-                parsed = new AttributeUsageDslParser().parse(subEntry);
-            } else if (line.startsWith("part ")) {
-                parsed = new PartUsageDslParser().parse(subEntry);
-            } else if (line.startsWith("constraint ")) {
-                parsed = new ConstraintUsageDslParser().parse(subEntry);
-            }
-
-            if (parsed instanceof Usage usage) {
-                def.getOwnedUsages().add(usage);
+            DslParser parser = dslParserRegistry.getParser(semanticType);
+            if (parser != null) {
+                DslRawEntry subEntry = new DslRawEntry();
+                subEntry.body = line;
+                Element parsed = parser.parse(subEntry);
+                if (parsed instanceof Usage usage) {
+                    def.getOwnedUsages().add(usage);
+                }
             }
         }
 
         return def;
     }
-}
 
+    private String extractPrefix(String line) {
+        int spaceIndex = line.indexOf(" ");
+        return (spaceIndex > 0) ? line.substring(0, spaceIndex) : "";
+    }
+
+    private String mapPrefixToType(String prefix) {
+        return switch (prefix) {
+            case "attr" -> "AttributeUsage";
+            case "part" -> "PartUsage";
+            case "constraint" -> "ConstraintUsage";
+            default -> "";
+        };
+    }
+}
 

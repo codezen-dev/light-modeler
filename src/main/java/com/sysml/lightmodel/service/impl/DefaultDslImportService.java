@@ -15,12 +15,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DefaultDslImportService implements DslImportService {
 
+    private final DslParserRegistry dslParserRegistry;
+
     @Override
     public List<Element> parseDsl(String dslText) {
         List<DslRawEntry> entries = DslTokenizer.tokenize(dslText);
         List<Element> elements = new ArrayList<>();
         for (DslRawEntry entry : entries) {
-            elements.add(DslParserRegistry.getParser(entry.type).parse(entry));
+            elements.add(dslParserRegistry.getParser(entry.type).parse(entry));
         }
         return elements;
     }
