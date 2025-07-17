@@ -2,6 +2,7 @@ package com.sysml.lightmodel.semantic;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,5 +14,5 @@ public class TypeLibraryElement {
     private String name;               // 类型名，如 Block1
     private String type;               // 实际类型，一般为 StructureDefinition
     private String documentation;      // 描述
-    private List<Element> children;    // 内部结构定义，兼容 Element.children
+    private List<Element> children = new ArrayList<>();    // 内部结构定义，兼容 Element.children
 }

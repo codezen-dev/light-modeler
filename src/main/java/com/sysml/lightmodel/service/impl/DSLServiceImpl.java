@@ -12,10 +12,7 @@ import com.sysml.lightmodel.service.SemanticElementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,26 +24,42 @@ public class DSLServiceImpl implements DSLService {
     private final TypeLibraryServiceImpl typeLibraryService;
     @Override
     public String exportDsl() {
-        List<Element> all = elementService.getAllElements();
+        List<Element> modelElements = elementService.getAllElements();
         List<Element> roots = elementService.getElementTree();
+
+        // 加载类型库定义
+        List<TypeLibraryElement> libDefs = typeLibraryService.getAllTypeDefinitions();
+        List<Element> libElements = libDefs.stream()
+                .flatMap(e -> Optional.ofNullable(e.getChildren())
+                        .orElse(Collections.emptyList()).stream())
+                .collect(Collectors.toList());
+
+
+        // 合并后解析上下文
+        List<Element> all = new ArrayList<>(modelElements);
+        all.addAll(libElements);
         populateDefinitionNames(all);
-        // 注入上下文
         RendererContext.setResolver(new DefinitionResolver(all));
+
         try {
             StringBuilder builder = new StringBuilder();
-            Set<String> imports = detectUsedLibraries(all, typeLibraryService);
+
+            Set<String> imports = detectUsedLibraries(modelElements, typeLibraryService);
             for (String lib : imports) {
                 builder.append("import \"").append(lib).append("\"\n\n");
             }
+
             for (Element root : roots) {
                 String dsl = DslRendererRegistry.getRenderer(root.getType()).render(root, 0);
                 builder.append(dsl);
             }
+
             return builder.toString();
         } finally {
-            RendererContext.clear(); // 清理上下文，防止线程复用污染
+            RendererContext.clear();
         }
     }
+
     @Override
     public String exportDsl(Long id) {
         List<Element> all = elementService.getAllElements();

@@ -27,36 +27,15 @@
     "type": "PrimitiveType",
     "name": "Duration"
   },
-  {
-    "type": "Block",
-    "name": "PhysicalQuantity",
-    "children": [
-      {
-        "type": "AttributeUsage",
-        "name": "value",
-        "definitionName": "Real"
-      },
-      {
-        "type": "AttributeUsage",
-        "name": "unit",
-        "definitionName": "String"
-      }
-    ]
-  },
-  {
-    "type": "Block",
-    "name": "GeoLocation",
-    "children": [
-      {
-        "type": "AttributeUsage",
-        "name": "latitude",
-        "definitionName": "Real"
-      },
-      {
-        "type": "AttributeUsage",
-        "name": "longitude",
-        "definitionName": "Real"
-      }
-    ]
-  }
+    {
+      "name": "Float",
+      "type": "AttributeDefinition",
+      "children": []
+    },
+    {
+      "name": "Engine",
+      "type": "StructureDefinition",
+      "children": []
+    }
+
 ]
